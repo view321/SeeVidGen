@@ -1,35 +1,38 @@
 import { useVideoJob } from '../hooks/useVideoJob.js'
 
 const STATUS_META = {
-  idle:        { label: 'Idle',         color: 'text-zinc-500',   dot: 'bg-zinc-600' },
-  submitting:  { label: 'Submitting…',  color: 'text-yellow-400', dot: 'bg-yellow-400', pulse: true },
-  pending:     { label: 'Pending…',     color: 'text-yellow-400', dot: 'bg-yellow-400', pulse: true },
-  in_progress: { label: 'Generating…',  color: 'text-indigo-400', dot: 'bg-indigo-400', pulse: true },
-  completed:   { label: 'Completed',    color: 'text-emerald-400',dot: 'bg-emerald-400' },
-  failed:      { label: 'Failed',       color: 'text-red-400',    dot: 'bg-red-500' },
-  cancelled:   { label: 'Cancelled',    color: 'text-red-400',    dot: 'bg-red-500' },
-  expired:     { label: 'Expired',      color: 'text-red-400',    dot: 'bg-red-500' },
+  idle:        { label: 'Idle',         color: 'text-zinc-500',    dot: 'bg-zinc-600' },
+  submitting:  { label: 'Submitting…',  color: 'text-yellow-400',  dot: 'bg-yellow-400', pulse: true },
+  pending:     { label: 'Pending…',     color: 'text-yellow-400',  dot: 'bg-yellow-400', pulse: true },
+  in_progress: { label: 'Generating…',  color: 'text-indigo-400',  dot: 'bg-indigo-400', pulse: true },
+  completed:   { label: 'Completed',    color: 'text-emerald-400', dot: 'bg-emerald-400' },
+  failed:      { label: 'Failed',       color: 'text-red-400',     dot: 'bg-red-500' },
+  cancelled:   { label: 'Cancelled',    color: 'text-red-400',     dot: 'bg-red-500' },
+  expired:     { label: 'Expired',      color: 'text-red-400',     dot: 'bg-red-500' },
 }
 
 const ACTIVE = new Set(['submitting', 'pending', 'in_progress'])
 
-export default function VideoCard({ job, apiKey }) {
-  const { status, videoUrl, cost, error } = useVideoJob(
+export default function VideoCard({ job, apiKey, onUpdate }) {
+  const { status, videoUrl, cost, error } = useVideoJob({
     apiKey,
-    job.model,
-    job.params,
-    job.prompt,
-    job.refs,
-    true,
-  )
+    model:           job.model,
+    params:          job.params,
+    prompt:          job.prompt,
+    refs:            job.refs,
+    initialJobId:    job.jobId,
+    initialStatus:   job.status,
+    initialVideoUrl: job.videoUrl,
+    initialCost:     job.cost,
+    onUpdate:        (updates) => onUpdate(job.id, updates),
+  })
 
-  const meta = STATUS_META[status] ?? STATUS_META.idle
+  const meta    = STATUS_META[status] ?? STATUS_META.idle
   const isActive = ACTIVE.has(status)
-  const isDone = status === 'completed'
+  const isDone   = status === 'completed'
 
   return (
     <div className={`card overflow-hidden transition-all duration-500 ${isDone ? 'ring-1 ring-emerald-500/20' : ''}`}>
-      {/* Video / placeholder */}
       {videoUrl ? (
         <video
           src={videoUrl}
@@ -62,10 +65,8 @@ export default function VideoCard({ job, apiKey }) {
         </div>
       )}
 
-      {/* Info bar */}
       <div className="px-3 py-2.5 flex items-start gap-2">
         <div className="flex-1 min-w-0 space-y-0.5">
-          {/* Status row */}
           <div className="flex items-center gap-1.5">
             <span className={`inline-block w-1.5 h-1.5 rounded-full shrink-0 ${meta.dot} ${meta.pulse ? 'animate-pulse2' : ''}`} />
             <span className={`text-xs font-semibold ${meta.color}`}>{meta.label}</span>
@@ -73,7 +74,6 @@ export default function VideoCard({ job, apiKey }) {
               <span className="text-[10px] text-zinc-600 ml-auto">${cost.toFixed(3)}</span>
             )}
           </div>
-          {/* Model + prompt */}
           <p className="text-xs text-zinc-400 font-medium truncate">{job.model.label}</p>
           <p className="text-[11px] text-zinc-600 truncate">{job.prompt}</p>
         </div>
